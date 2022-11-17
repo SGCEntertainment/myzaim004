@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class AppManager : MonoBehaviour
 {
@@ -14,9 +15,9 @@ public class AppManager : MonoBehaviour
         "Что такое микрокредит",
     };
 
-    private void Start() => Init();
+    private void Start() => StartCoroutine(nameof(InitMenu));
 
-    private void Init()
+    private IEnumerator InitMenu()
     {
         MenuItem menuItemPrefab = Resources.Load<MenuItem>("UI/menuItem");
         Transform menuItemParent = GameObject.Find("menuItemParent").transform;
@@ -24,6 +25,7 @@ public class AppManager : MonoBehaviour
         foreach(string folder in contentFolders)
         {
             Instantiate(menuItemPrefab, menuItemParent).SetData(folder);
+            yield return new WaitForSeconds(0.25f);
         }
     }
 }
