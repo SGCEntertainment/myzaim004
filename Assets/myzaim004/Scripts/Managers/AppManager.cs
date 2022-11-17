@@ -1,18 +1,29 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class AppManager : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    readonly string[] contentFolders =
     {
-        
-    }
+        "Как взять кредит выгодно",
+        "Как улучшить кредитный рейтинг",
+        "Какие возможности дает микрокредит",
+        "Кредит или займ, в чем разница",
+        "Кредит это обязательство",
+        "Начисление процентов",
+        "Ставки и проценты",
+        "Что такое микрокредит",
+    };
 
-    // Update is called once per frame
-    void Update()
+    private void Start() => Init();
+
+    private void Init()
     {
-        
+        MenuItem menuItemPrefab = Resources.Load<MenuItem>("UI/menuItem");
+        Transform menuItemParent = GameObject.Find("menuItemParent").transform;
+
+        foreach(string folder in contentFolders)
+        {
+            Instantiate(menuItemPrefab, menuItemParent).SetData(folder);
+        }
     }
 }
