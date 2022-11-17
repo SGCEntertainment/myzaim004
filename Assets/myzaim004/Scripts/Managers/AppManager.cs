@@ -1,9 +1,15 @@
 using UnityEngine;
 using System.Collections;
-using System.Linq;
+using System.IO;
+using System;
 
 public class AppManager : MonoBehaviour
 {
+    private const float pageDelay = 0.05f;
+
+    private int pageIndex = 0;
+    private bool InitializeElements { get; set; }
+
     readonly string[] contentFolders =
     {
         "Как взять кредит выгодно",
@@ -16,33 +22,106 @@ public class AppManager : MonoBehaviour
         "Что такое микрокредит",
     };
 
+    private Transform ContentParent { get; set; }
+
+    public static Action OnPressAction { get; set; } = delegate { };
+
+    private void Awake()
+    {
+        ContentParent = GameObject.Find("contentParent").transform;
+    }
+
     private void Start() => StartCoroutine(nameof(InitMenu));
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Escape) && pageIndex > 0)
+        {
+            GoBack();
+        }
+    }
+
+    private void GoBack()
+    {
+        if (InitializeElements)
+        {
+            return;
+        }
+
+        pageIndex--;
+        if(pageIndex < 0)
+        {
+            pageIndex = 0;
+        }
+
+        OnPressAction?.Invoke();
+        switch (pageIndex)
+        {
+            case 0: StartCoroutine(nameof(InitMenu)); break;
+        }
+    }
+
+    private void ClearOldElements()
+    {
+        foreach(Transform t in ContentParent)
+        {
+            Destroy(t.gameObject);
+        }
+
+        ContentParent.DetachChildren();
+    }
 
     private IEnumerator InitMenu()
     {
-        MenuItem menuItemPrefab = Resources.Load<MenuItem>("UI/menuItem");
-        Transform menuItemParent = GameObject.Find("contentParent").transform;
+        InitializeElements = true;
+        ClearOldElements();
 
+        MenuItem menuItemPrefab = Resources.Load<MenuItem>("UI/menuItem");
         foreach(string folder in contentFolders)
         {
-            Instantiate(menuItemPrefab, menuItemParent).SetData(folder, () =>
+            Instantiate(menuItemPrefab, ContentParent).SetData(folder, () =>
             {
+                if(InitializeElements)
+                {
+                    return;
+                }
+
+                OnPressAction?.Invoke();
                 StartCoroutine(InitFolderItems(Resources.LoadAll<TextAsset>($"Content/{folder}")));
             });
 
-            yield return new WaitForSeconds(0.25f);
+            yield return new WaitForSeconds(pageDelay);
         }
+
+        InitializeElements = false;
     }
 
     private IEnumerator InitFolderItems(TextAsset[] files)
     {
-        MenuItem menuItemPrefab = Resources.Load<MenuItem>("UI/menuItem");
-        Transform menuItemParent = GameObject.Find("menuItemParent").transform;
+        pageIndex++;
+        ClearOldElements();
 
+        MenuItem subItemPrefab = Resources.Load<MenuItem>("UI/subItem");
         foreach (TextAsset textAsset in files)
         {
-            //Instantiate(menuItemPrefab, menuItemParent).SetData(folder);
-            yield return new WaitForSeconds(0.25f);
+            StringReader reader = new StringReader(textAsset.text);
+            string fileName = reader.ReadLine();
+
+            Instantiate(subItemPrefab, ContentParent).SetData(fileName, () =>
+            {
+                if(InitializeElements)
+                {
+                    return;
+                }
+
+                OnPressAction?.Invoke();
+                ClearOldElements();
+
+                TextItem textItemPrefab = Resources.Load<TextItem>("UI/textItem");
+                Instantiate(textItemPrefab, ContentParent).SetData(textAsset.text);
+            });
+
+            yield return new WaitForSeconds(pageDelay);
         }
     }
 }
